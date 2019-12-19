@@ -25,8 +25,8 @@ from .AuthorsModel import AuthorsModel
 from .PackagesModel import PackagesModel
 
 if TYPE_CHECKING:
+    from UM.TaskManagement.HttpRequestManager import HttpRequestData
     from cura.Settings.GlobalStack import GlobalStack
-    from cura.TaskManagement.HttpNetworkRequestManager import HttpNetworkRequestData
 
 i18n_catalog = i18nCatalog("cura")
 
@@ -44,7 +44,7 @@ class Toolbox(QObject, Extension):
         self._api_url = None  # type: Optional[str]
 
         # Network:
-        self._download_request_data = None  # type: Optional[HttpNetworkRequestData]
+        self._download_request_data = None  # type: Optional[HttpRequestData]
         self._download_progress = 0  # type: float
         self._is_downloading = False  # type: bool
         self._request_headers = dict()  # type: Dict[str, str]
@@ -159,8 +159,8 @@ class Toolbox(QObject, Extension):
 
         data = "{\"data\": {\"cura_version\": \"%s\", \"rating\": %i}}" % (Version(self._application.getVersion()), rating)
 
-        self._application.getHttpNetworkRequestManager().put(url, headers_dict = self._request_headers,
-                                                             data = data.encode())
+        self._application.getHttpRequestManager().put(url, headers_dict = self._request_headers,
+                                                      data = data.encode())
 
     @pyqtSlot(result = str)
     def getLicenseDialogPluginName(self) -> str:
@@ -548,9 +548,9 @@ class Toolbox(QObject, Extension):
 
         callback = lambda r, rt = request_type: self._onAuthorsDataRequestFinished(rt, r)
         error_callback = lambda r, e, rt = request_type: self._onAuthorsDataRequestFinished(rt, r, e)
-        self._application.getHttpNetworkRequestManager().get(url,
-                                                             callback = callback,
-                                                             error_callback = error_callback)
+        self._application.getHttpRequestManager().get(url,
+                                                      callback = callback,
+                                                      error_callback = error_callback)
 
     def _onAuthorsDataRequestFinished(self, request_type: str,
                                       reply: "QNetworkReply",
@@ -602,10 +602,10 @@ class Toolbox(QObject, Extension):
         callback = lambda r: self._onDownloadFinished(r)
         error_callback = lambda r, e: self._onDownloadFailed(r, e)
         download_progress_callback = self._onDownloadProgress
-        request_data = self._application.getHttpNetworkRequestManager().get(url, headers_dict = self._request_headers,
-                                                                            callback = callback,
-                                                                            error_callback = error_callback,
-                                                                            download_progress_callback = download_progress_callback)
+        request_data = self._application.getHttpRequestManager().get(url, headers_dict = self._request_headers,
+                                                                     callback = callback,
+                                                                     error_callback = error_callback,
+                                                                     download_progress_callback = download_progress_callback)
 
         self._download_request_data = request_data
         self.setDownloadProgress(0)
@@ -615,7 +615,7 @@ class Toolbox(QObject, Extension):
     def cancelDownload(self) -> None:
         Logger.log("i", "User cancelled the download of a package. request %s", self._download_request_data)
         if self._download_request_data is not None:
-            self._application.getHttpNetworkRequestManager().abortRequest(self._download_request_data)
+            self._application.getHttpRequestManager().abortRequest(self._download_request_data)
             self._download_request_data = None
         self.resetDownload()
 
